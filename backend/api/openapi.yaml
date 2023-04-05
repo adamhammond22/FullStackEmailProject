@@ -1,0 +1,444 @@
+#
+# CSE186 Assignment 8 Backend
+#
+
+openapi: '3.0.3'
+
+info:
+  description: CSE186 Assignment 8 Backend
+  version: 0.1.0
+  title: CSE186 Assignment 8 Backend
+
+servers:
+  - url: http://localhost:3010/v0
+
+paths:
+  /dummy:
+    get:
+      description: Dummy Endpoint
+      responses:
+        200:
+          description: Succesful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DummyResponse'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /login:
+    post:
+      description: Login Attempt
+      requestBody:
+        description: Request Body
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        200:
+          description: Login Succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        401:
+          description: Unauthorized
+  /mailbox:
+    get:
+      security:
+        - bearerAuth: []
+      description: Gets all mailboxes for a user
+      parameters:
+        - in: query
+          name: owner
+          required: true
+          description: Email owner
+          schema:
+            type: string
+      responses:
+        200:
+          description: mailboxes returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailboxNameArray'
+
+    post:
+      security:
+        - bearerAuth: []
+      description: Creates new mailbox
+      requestBody:
+        description: Request Body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Mailbox'
+      responses:
+        201:
+          description: mailbox added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailboxNameArray'
+
+  /starred/{id}:
+    put:
+      description: updates starred status by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Email UUID
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: isStarred
+          required: true
+          description: is this starred
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: Email found and updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentEmail'
+        400:
+          description: Invalid UUID
+        404:
+          description: Email not Found
+
+  /read/{id}:
+    put:
+      description: updates read status by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Email UUID
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: isRead
+          required: true
+          description: is this read
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: Email found and updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentEmail'
+        400:
+          description: Invalid UUID
+        404:
+          description: Email not Found
+
+  /mail:
+    get:
+      description: Returns all emails from mailbox, or search result.
+      parameters:
+        - in: query
+          name: mailbox
+          required: false
+          description: Mailbox Name
+          schema:
+            type: string
+        - in: query
+          name: search
+          required: false
+          description: Search
+          schema:
+            type: string
+      responses:
+        200:
+          description: Response with all mailboxes or search results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailboxArray'
+    post:
+      description: Creates a new email in sent mailbox
+      requestBody:
+        description: Email to add
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InputEmail'
+      responses:
+        201:
+          description: Email added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentEmail'
+        400:
+          description: Bad request
+
+  /mail/{id}:
+    get:
+      description: Returns an email with the specified UUID.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Email UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Email Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentEmail'
+        400:
+          description: Invalid UUID
+        404:
+          description: Email not Found
+    put:
+      description: Moves email identified by id into specified mailbox
+      parameters:
+        - in: query
+          name: mailbox
+          required: true
+          description: Mailbox name
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          description: Email UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        204:
+          description: Email successfully moved
+        404:
+          description: Email with UUID not found
+        409:
+          description: Sent mailbox does not contain this email
+components:
+  schemas:
+    MailboxArray:
+      type: array
+      items: 
+        $ref: '#/components/schemas/Mailbox'
+
+    Mailbox:
+      type: object
+      required:
+        - name
+        - mail
+      properties:
+        name:
+          type: string
+        mail:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentFreeEmail'
+
+    ContentFreeEmail:
+      type: object
+      required:
+        - id 
+        - from
+        - to
+        - subject
+        - sent
+        - received
+        - starred
+        - read
+      properties:
+        avatarurl:
+          type: string
+        id:
+          type: string
+          format: uuid
+        from:
+          type: object
+          required:
+            - name
+            - email
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+        to:
+          type: object
+          required:
+            - name
+            - email
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+        subject:
+          type: string
+        sent:
+          type: string
+        received:
+          type: string
+        starred:
+          type: boolean
+        read:
+          type: boolean
+
+    ContentEmail:
+      type: object
+      required:
+        - id 
+        - from
+        - to
+        - subject
+        - sent
+        - received
+        - content
+        - starred
+        - read
+      properties:
+        avatarurl:
+          type: string
+        id:
+          type: string
+          format: uuid
+        from:
+          type: object
+          required:
+            - name
+            - email
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+        to:
+          type: object
+          required:
+            - name
+            - email
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+        subject:
+          type: string
+        sent:
+          type: string
+        received:
+          type: string
+        content:
+          type: string
+        starred:
+          type: boolean
+        read:
+          type: boolean
+
+    InputEmail:
+      type: object
+      required:
+        - to
+        - from
+        - subject
+        - content
+      properties:
+        to:
+          type: object
+          required:
+            - name
+            - email
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+        from:
+          type: object
+          required:
+            - name
+            - email
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+              format: email
+        subject:
+          type: string
+        content:
+          type: string
+      additionalProperties: false
+
+    MailboxNameArray:
+      type: array
+      items: 
+        type: string
+
+    Error:
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+      required:
+        - code
+        - message
+
+    DummyResponse:
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    User:
+      type: object
+      properties:
+        name:
+          type: string
+        accessToken:
+          type: string
+        avatarurl:
+          type: string
+      required:
+        - name
+        - accessToken
+        - avatarurl
+
+  securitySchemes:
+    bearerAuth:            # name for our security scheme, copied from book example
+      type: http
+      scheme: bearer
+      bearerFormat: JWT    # optional, arbitrary value for documentation purposes
