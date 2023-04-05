@@ -1,0 +1,15 @@
+.App {
+	font-family: Arial, Helvetica, sans-serif;
+  font-size: 90px;
+}
+tr: hover {
+	border-style: solid;
+	border-color: black;
+	background-color: green;
+}
+table {
+	width: 100%;
+}
+p {
+	font-size:  20px;
+}
